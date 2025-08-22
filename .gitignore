@@ -1,0 +1,219 @@
+# === Operating System Files ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# === IDE and Editor Files ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.buildpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.phpstorm.meta.php
+_ide_helper.php
+_ide_helper_models.php
+
+# === PHP and Composer ===
+vendor/
+composer.lock
+composer.phar
+php_errors.log
+.phpunit.result.cache
+phpunit.xml
+phpunit.xml.dist
+
+# === Laravel Specific ===
+.env
+.env.*
+!.env.example
+!.env.testing.example
+storage/
+bootstrap/cache/
+public/storage
+public/hot
+public/mix-manifest.json
+mix-manifest.json
+npm-debug.log
+yarn-error.log
+
+# === Node.js and Frontend ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+
+# === Build and Dist Files ===
+build/
+dist/
+public/build/
+public/css/
+public/js/
+public/fonts/
+*.min.js
+*.min.css
+
+# === Testing ===
+coverage/
+.coverage/
+coverage.xml
+coverage.clover
+.phpunit.cache
+tests/_output/
+tests/_support/_generated
+.pest/
+
+# === Logs ===
+*.log
+logs/
+storage/logs/
+laravel.log
+php_errors.log
+error.log
+access.log
+
+# === Cache and Temporary Files ===
+*.cache
+.cache/
+tmp/
+temp/
+.tmp/
+.temp/
+*.tmp
+*.temp
+
+# === Database ===
+*.sqlite
+*.sqlite3
+*.db
+database/database.sqlite
+storage/database.sqlite
+
+# === Documentation ===
+docs/build/
+docs/_site/
+.jekyll-cache/
+.sass-cache/
+
+# === Package Development ===
+.packages/
+packages/*/vendor/
+packages/*/node_modules/
+packages/*/composer.lock
+packages/*/.env
+
+# === Tenancy Specific ===
+storage/tenancy/
+storage/app/tenancy/
+database/tenancy/
+*.tenant.sqlite
+tenant_*.sql
+tenant_backup_*
+.tenancy_cache/
+
+# === Security ===
+.env.production
+.env.staging
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+config/secrets.php
+auth.json
+
+# === Backup Files ===
+*.bak
+*.backup
+*.old
+*.orig
+*~
+.#*
+#*#
+
+# === Version Control ===
+.svn/
+.hg/
+.bzr/
+CVS/
+
+# === Archive Files ===
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+
+# === Runtime ===
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# === Docker ===
+.dockerignore
+docker-compose.override.yml
+.docker/
+Dockerfile.local
+
+# === Kubernetes ===
+*.kubeconfig
+k8s-local/
+
+# === Monitoring and Profiling ===
+.blackfire
+.blackfire.ini
+xhprof/
+*.prof
+
+# === Asset Compilation ===
+webpack-stats.json
+.webpack/
+vite.config.js.timestamp-*
+
+# === Static Analysis ===
+.phpstan.neon.local
+psalm.xml.local
+.psalm_cache/
+.phpcs.xml.local
+
+# === Development Tools ===
+.php-cs-fixer.cache
+.php_cs.cache
+.phan/
+rector.php.local
+
+# === Local Configuration ===
+config/local/
+storage/local/
+resources/local/
+
+# === Runtime Generated Files ===
+_generated/
+generated/
+auto-generated/
+
+# === Package Specific Ignores ===
+/storage/framework/cache/tenancy/
+/storage/framework/sessions/tenancy/
+/storage/framework/views/tenancy/
+/database/migrations/*_tenancy_*
+/config/tenancy.local.php
+
+# === Keep Important Files ===
+!.gitkeep
+!.htaccess
+!web.config
