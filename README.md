@@ -1439,7 +1439,7 @@ We thank our sponsors who make this project possible:
 
 <div align="center">
 
-**Made with ❤️ by the Litepie Team**
+**Made with ❤️ by the Lavalite Team**
 
 [⭐ Star us on GitHub](https://github.com/litepie/tenancy) | [🐛 Report Issues](https://github.com/litepie/tenancy/issues) | [💬 Join Discussions](https://github.com/litepie/tenancy/discussions)
 

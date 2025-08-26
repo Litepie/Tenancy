@@ -5,8 +5,9 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "Litepie Team",
-            "email": "info@litepie.com"
+            "name": "Lavalite Team",
+            "email": "support@lavalite.org",
+            "homepage": "https://lavalite.org"
         }
     ],
     "require": {

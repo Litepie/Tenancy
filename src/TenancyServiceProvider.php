@@ -3,15 +3,9 @@
 namespace Litepie\Tenancy;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Route;
-use Litepie\Tenancy\Commands\TenancyInstallCommand;
-use Litepie\Tenancy\Commands\TenancyMigrateCommand;
-use Litepie\Tenancy\Commands\TenancyRunCommand;
-use Litepie\Tenancy\Commands\TenancySeedCommand;
-use Litepie\Tenancy\Commands\TenantCreateCommand;
+use Litepie\Tenancy\Commands\TenantDiagnoseCommand;
 use Litepie\Tenancy\Commands\TenantListCommand;
+use Litepie\Tenancy\Commands\TenantMigrateCommand;
 use Litepie\Tenancy\Contracts\TenantContract;
 use Litepie\Tenancy\Contracts\TenancyManagerContract;
 use Litepie\Tenancy\Contracts\TenantDetectorContract;
@@ -19,13 +13,13 @@ use Litepie\Tenancy\Contracts\DatabaseStrategyContract;
 use Litepie\Tenancy\Contracts\CacheStrategyContract;
 use Litepie\Tenancy\Contracts\StorageStrategyContract;
 use Litepie\Tenancy\Managers\TenancyManager;
-use Litepie\Tenancy\Detectors\DomainTenantDetector;
-use Litepie\Tenancy\Strategies\SeparateDatabaseStrategy;
-use Litepie\Tenancy\Strategies\PrefixCacheStrategy;
-use Litepie\Tenancy\Strategies\SeparateStorageStrategy;
-use Litepie\Tenancy\Middleware\IdentifyTenant;
-use Litepie\Tenancy\Middleware\RequireTenant;
-use Litepie\Tenancy\Middleware\PreventCrossTenantAccess;
+use Litepie\Tenancy\Detectors\DomainDetector;
+use Litepie\Tenancy\Detectors\SubdomainDetector;
+use Litepie\Tenancy\Strategies\Database\SeparateDatabaseStrategy;
+use Litepie\Tenancy\Strategies\Cache\PrefixedCacheStrategy;
+use Litepie\Tenancy\Strategies\Storage\TenantPathStrategy;
+use Litepie\Tenancy\Middleware\InitializeTenancy;
+use Litepie\Tenancy\Middleware\RequiresTenant;
 
 class TenancyServiceProvider extends ServiceProvider
 {
@@ -49,7 +43,6 @@ class TenancyServiceProvider extends ServiceProvider
         $this->publishMigrations();
         $this->registerCommands();
         $this->registerMiddleware();
-        $this->registerEventListeners();
         $this->bootTenancy();
     }
 
@@ -58,58 +51,23 @@ class TenancyServiceProvider extends ServiceProvider
      */
     protected function registerContracts(): void
     {
-        $this->app->bind(TenantContract::class, config('tenancy.tenant_model'));
+        $this->app->bind(TenantContract::class, config('tenancy.tenant_model', \Litepie\Tenancy\Models\Tenant::class));
         
         $this->app->singleton(TenancyManagerContract::class, TenancyManager::class);
         
         $this->app->bind(TenantDetectorContract::class, function ($app) {
-            $strategy = config('tenancy.detection.strategy');
-            $detectorClass = config('tenancy.detection.detector_class');
-            
-            if ($detectorClass) {
-                return $app->make($detectorClass);
-            }
+            $strategy = config('tenancy.detection.strategy', 'domain');
             
             return match ($strategy) {
-                'domain' => $app->make(DomainTenantDetector::class),
-                'subdomain' => $app->make(\Litepie\Tenancy\Detectors\SubdomainTenantDetector::class),
-                'header' => $app->make(\Litepie\Tenancy\Detectors\HeaderTenantDetector::class),
-                'path' => $app->make(\Litepie\Tenancy\Detectors\PathTenantDetector::class),
-                default => $app->make(DomainTenantDetector::class),
+                'domain' => $app->make(DomainDetector::class),
+                'subdomain' => $app->make(SubdomainDetector::class),
+                default => $app->make(DomainDetector::class),
             };
         });
         
-        $this->app->bind(DatabaseStrategyContract::class, function ($app) {
-            $strategy = config('tenancy.database.strategy');
-            
-            return match ($strategy) {
-                'separate' => $app->make(SeparateDatabaseStrategy::class),
-                'single' => $app->make(\Litepie\Tenancy\Strategies\SingleDatabaseStrategy::class),
-                'hybrid' => $app->make(\Litepie\Tenancy\Strategies\HybridDatabaseStrategy::class),
-                default => $app->make(SeparateDatabaseStrategy::class),
-            };
-        });
-        
-        $this->app->bind(CacheStrategyContract::class, function ($app) {
-            $strategy = config('tenancy.cache.strategy');
-            
-            return match ($strategy) {
-                'prefix' => $app->make(PrefixCacheStrategy::class),
-                'separate' => $app->make(\Litepie\Tenancy\Strategies\SeparateCacheStrategy::class),
-                'shared' => $app->make(\Litepie\Tenancy\Strategies\SharedCacheStrategy::class),
-                default => $app->make(PrefixCacheStrategy::class),
-            };
-        });
-        
-        $this->app->bind(StorageStrategyContract::class, function ($app) {
-            $strategy = config('tenancy.storage.strategy');
-            
-            return match ($strategy) {
-                'separate' => $app->make(SeparateStorageStrategy::class),
-                'shared' => $app->make(\Litepie\Tenancy\Strategies\SharedStorageStrategy::class),
-                default => $app->make(SeparateStorageStrategy::class),
-            };
-        });
+        $this->app->bind(DatabaseStrategyContract::class, SeparateDatabaseStrategy::class);
+        $this->app->bind(CacheStrategyContract::class, PrefixedCacheStrategy::class);
+        $this->app->bind(StorageStrategyContract::class, TenantPathStrategy::class);
     }
 
     /**
@@ -149,12 +107,9 @@ class TenancyServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
-                TenancyInstallCommand::class,
-                TenancyMigrateCommand::class,
-                TenancyRunCommand::class,
-                TenancySeedCommand::class,
-                TenantCreateCommand::class,
+                TenantDiagnoseCommand::class,
                 TenantListCommand::class,
+                TenantMigrateCommand::class,
             ]);
         }
     }
@@ -166,30 +121,8 @@ class TenancyServiceProvider extends ServiceProvider
     {
         $router = $this->app['router'];
         
-        $router->aliasMiddleware('tenant.identify', IdentifyTenant::class);
-        $router->aliasMiddleware('tenant.require', RequireTenant::class);
-        $router->aliasMiddleware('tenant.prevent_cross_access', PreventCrossTenantAccess::class);
-        
-        // Auto-register middleware if configured
-        if (config('tenancy.middleware.identify_tenant')) {
-            $router->pushMiddlewareToGroup('web', IdentifyTenant::class);
-        }
-    }
-
-    /**
-     * Register event listeners.
-     */
-    protected function registerEventListeners(): void
-    {
-        if (config('tenancy.events.fire_events')) {
-            $listeners = config('tenancy.events.listeners', []);
-            
-            foreach ($listeners as $event => $eventListeners) {
-                foreach ((array) $eventListeners as $listener) {
-                    Event::listen($event, $listener);
-                }
-            }
-        }
+        $router->aliasMiddleware('tenant.initialize', InitializeTenancy::class);
+        $router->aliasMiddleware('tenant.require', RequiresTenant::class);
     }
 
     /**
@@ -198,25 +131,7 @@ class TenancyServiceProvider extends ServiceProvider
     protected function bootTenancy(): void
     {
         if (!$this->app->runningInConsole()) {
-            $this->app->make(TenancyManagerContract::class)->initialize();
-        }
-        
-        $this->bootQueueTenancy();
-    }
-
-    /**
-     * Boot queue tenancy features.
-     */
-    protected function bootQueueTenancy(): void
-    {
-        if (config('tenancy.queue.tenant_aware_by_default')) {
-            Queue::createPayloadUsing(function ($connectionName, $queue, $payload) {
-                if (tenancy()->hasTenant()) {
-                    $payload[config('tenancy.queue.tenant_parameter')] = tenancy()->current()->getKey();
-                }
-                
-                return $payload;
-            });
+            // Initialize tenancy if needed
         }
     }
 }
